@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ExoCoins — Apuestas simuladas de fútbol</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ============ STARFIELD BACKGROUND ============ -->
+<canvas id="starfield"></canvas>
+
+<!-- ============ TOP BAR ============ -->
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">◎</span>
+    <span class="brand-name">Exo<span class="accent">Coins</span></span>
+  </div>
+
+  <nav class="ticker" id="ticker">
+    <div class="ticker-track" id="tickerTrack"></div>
+  </nav>
+
+  <div class="topbar-right" id="topbarRight">
+    <!-- filled by JS depending on auth state -->
+  </div>
+</header>
+
+<!-- ============ AUTH SCREEN ============ -->
+<main id="authScreen" class="auth-screen">
+  <section class="auth-hero">
+    <p class="eyebrow">Simulador · moneda ficticia · sin dinero real</p>
+    <h1>Cada cuota es una órbita.<br>Cada apuesta, un despegue.</h1>
+    <p class="hero-sub">Reclama <strong>5.000 ExoCoins</strong> de bienvenida y practica apostando en partidos de fútbol totalmente simulados. Nada de esto vale dinero real.</p>
+    <div class="hero-badges">
+      <div class="badge"><span class="badge-num">5.000</span><span class="badge-label">ExoCoins al crear cuenta</span></div>
+      <div class="badge"><span class="badge-num">100%</span><span class="badge-label">Ficticio, cero riesgo real</span></div>
+    </div>
+  </section>
+
+  <section class="auth-card">
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-tab="login">Iniciar sesión</button>
+      <button class="auth-tab" data-tab="register">Crear cuenta</button>
+    </div>
+
+    <form id="loginForm" class="auth-form">
+      <label>Usuario
+        <input type="text" id="loginUser" autocomplete="username" required />
+      </label>
+      <label>Contraseña
+        <input type="password" id="loginPass" autocomplete="current-password" required />
+      </label>
+      <p class="form-error" id="loginError"></p>
+      <button type="submit" class="btn-primary">Entrar</button>
+      <p class="hint">Admin demo: usuario <code>admin</code> · contraseña <code>admin123</code></p>
+    </form>
+
+    <form id="registerForm" class="auth-form hidden">
+      <label>Elige un usuario
+        <input type="text" id="regUser" autocomplete="username" required minlength="3" />
+      </label>
+      <label>Elige una contraseña
+        <input type="password" id="regPass" autocomplete="new-password" required minlength="4" />
+      </label>
+      <p class="form-error" id="registerError"></p>
+      <button type="submit" class="btn-primary">Crear cuenta y reclamar 5.000 ExoCoins</button>
+    </form>
+  </section>
+</main>
+
+<!-- ============ WELCOME BONUS OVERLAY ============ -->
+<div id="bonusOverlay" class="bonus-overlay hidden">
+  <div class="bonus-card">
+    <div class="coin-burst" id="coinBurst"></div>
+    <p class="bonus-eyebrow">Transmisión entrante</p>
+    <h2>+5.000 <span class="accent">ExoCoins</span></h2>
+    <p>Bono de bienvenida acreditado en tu wallet.</p>
+    <button class="btn-primary" id="bonusContinue">Entrar a la plataforma</button>
+  </div>
+</div>
+
+<!-- ============ APP (post-login) ============ -->
+<div id="app" class="app hidden">
+
+  <aside class="sidebar">
+    <button class="side-item active" data-view="football">
+      <span class="side-icon">⚽</span> Fútbol
+    </button>
+    <button class="side-item" data-view="mybets">
+      <span class="side-icon">🎟</span> Mis apuestas
+    </button>
+    <button class="side-item" data-view="wallet">
+      <span class="side-icon">◎</span> Wallet
+    </button>
+    <button class="side-item admin-only hidden" data-view="admin">
+      <span class="side-icon">⚙</span> Admin
+    </button>
+  </aside>
+
+  <main class="content">
+
+    <!-- ---- FOOTBALL VIEW ---- -->
+    <section id="view-football" class="view">
+      <div class="view-head">
+        <h2>Fútbol · Eventos simulados</h2>
+        <p class="view-sub">Cuotas ficticias generadas para práctica. Ningún resultado es real.</p>
+      </div>
+      <div id="eventsGrid" class="events-grid"></div>
+      <div id="eventsEmpty" class="empty-state hidden">
+        <p>No hay eventos abiertos por ahora.</p>
+        <p class="empty-sub">El administrador aún no ha publicado partidos.</p>
+      </div>
+    </section>
+
+    <!-- ---- MY BETS VIEW ---- -->
+    <section id="view-mybets" class="view hidden">
+      <div class="view-head">
+        <h2>Mis apuestas</h2>
+        <p class="view-sub">Historial de tus apuestas simuladas.</p>
+      </div>
+      <div id="betsList" class="bets-list"></div>
+      <div id="betsEmpty" class="empty-state hidden">
+        <p>Todavía no hiciste ninguna apuesta.</p>
+        <p class="empty-sub">Andá a Fútbol y elegí una cuota para empezar.</p>
+      </div>
+    </section>
+
+    <!-- ---- WALLET VIEW ---- -->
+    <section id="view-wallet" class="view hidden">
+      <div class="view-head">
+        <h2>Wallet</h2>
+        <p class="view-sub">Saldo y movimientos de tu cuenta ExoCoins.</p>
+      </div>
+      <div class="wallet-balance-card">
+        <p class="wallet-label">Saldo disponible</p>
+        <p class="wallet-amount"><span id="walletBalance">0</span> <span class="accent">EXO</span></p>
+      </div>
+      <div id="txList" class="tx-list"></div>
+    </section>
+
+    <!-- ---- ADMIN VIEW ---- -->
+    <section id="view-admin" class="view hidden">
+      <div class="view-head">
+        <h2>Panel admin</h2>
+        <p class="view-sub">Crear eventos, cerrar apuestas y liquidar resultados.</p>
+      </div>
+
+      <div class="admin-grid">
+        <form id="createEventForm" class="admin-form">
+          <h3>Nuevo evento</h3>
+          <label>Equipo local
+            <input type="text" id="evHome" required placeholder="Ej: Estrella del Sur" />
+          </label>
+          <label>Equipo visitante
+            <input type="text" id="evAway" required placeholder="Ej: Halcones FC" />
+          </label>
+          <label>Fecha y hora
+            <input type="datetime-local" id="evDate" required />
+          </label>
+          <div class="odds-row">
+            <label>Cuota local
+              <input type="number" id="evOddsHome" step="0.01" min="1.01" required value="2.10" />
+            </label>
+            <label>Cuota empate
+              <input type="number" id="evOddsDraw" step="0.01" min="1.01" required value="3.20" />
+            </label>
+            <label>Cuota visitante
+              <input type="number" id="evOddsAway" step="0.01" min="1.01" required value="3.40" />
+            </label>
+          </div>
+          <button type="submit" class="btn-primary">Publicar evento</button>
+        </form>
+
+        <div class="admin-events">
+          <h3>Eventos existentes</h3>
+          <div id="adminEventsList" class="admin-events-list"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ---- BET SLIP ---- -->
+  <aside class="betslip" id="betslip">
+    <div class="betslip-head">
+      <h3>Boleto</h3>
+      <span id="betslipCount" class="betslip-count">0</span>
+    </div>
+    <div id="betslipItems" class="betslip-items"></div>
+    <div id="betslipEmpty" class="betslip-empty">
+      <p>Elegí una cuota para armar tu apuesta.</p>
+    </div>
+    <div id="betslipFooter" class="betslip-footer hidden">
+      <label class="stake-label">Monto a apostar (EXO)
+        <input type="number" id="stakeInput" min="1" value="100" />
+      </label>
+      <div class="betslip-summary">
+        <span>Ganancia potencial</span>
+        <strong id="potentialWin">0</strong>
+      </div>
+      <button class="btn-primary" id="placeBetBtn">Confirmar apuesta</button>
+      <p class="form-error" id="betError"></p>
+    </div>
+  </aside>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
